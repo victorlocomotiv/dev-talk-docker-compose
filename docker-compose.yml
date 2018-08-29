@@ -1,0 +1,73 @@
+version: "2.2"
+
+networks:
+  proxy:
+  database:
+
+volumes:
+  uploads:
+  dbsql:
+  dbnosql:
+
+services:
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    networks:
+      - database
+    volumes:
+      - "dbsql:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: "example"
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: "1234"
+    ports:
+      - "15307:3306"
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    networks:
+      - database
+      - proxy
+    links:
+      - mysql:db
+    ports:
+      - 80
+    environment:
+      PMA_ARBITRARY: 1
+      MYSQL_USERNAME: root
+      MYSQL_ROOT_PASSWORD: "123456"
+  mongodb:
+    image: mongo
+    networks:
+      - database
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+  mongoexpress:
+    image: mongo-express
+    networks:
+      - database
+      - proxy
+    ports:
+      - 8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_BASICAUTH_USERNAME: 'admin'
+      ME_CONFIG_BASICAUTH_PASSWORD: '1234'
+      ME_CONFIG_MONGODB_ADMINUSERNAME: 'root'
+      ME_CONFIG_MONGODB_ADMINPASSWORD: 'example'
+  nginx:
+    build: ./nginx
+    networks:
+      - proxy
+    volumes:
+      - ./nginx/sites-enabled/:/etc/nginx/conf.d/
+      - ./www:/var/www
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - 80:80
+      - 443:443
+
